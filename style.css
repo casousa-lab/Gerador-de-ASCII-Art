@@ -1,0 +1,52 @@
+/* Reseta as margens e define o fundo escuro */
+body {
+    background-color: #000000;
+    color: #ffffff; 
+    font-family: 'Montserrat', sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    margin: 0;
+}
+
+.container {
+    text-align: center;
+    max-width: 100%;
+}
+
+/* Estilo da tela onde a arte vai aparecer */
+#telaAscii {
+    background-color: #000000;
+    border: 1px solid #333;
+    padding: 20px;
+    margin-top: 20px;
+    font-size: 8px; 
+    line-height: 8px; 
+    overflow-x: auto; 
+    border-radius: 10px;
+    font-family: 'Courier New', Courier, monospace; 
+    
+    text-align: center; 
+    width: fit-content; 
+    margin-left: auto;  
+    margin-right: auto; 
+}
+
+/* Estilizando o botão de input */
+input[type="file"] {
+   display: none;
+}
+
+#dropzone {
+    border: 2px dashed #555;
+    padding: 50px;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    display: block;
+    transition: background-color 0.3s ease;
+}
+#dropzone:hover {
+    background-color: #222222; 
+    border-color: #777777; 
+}
