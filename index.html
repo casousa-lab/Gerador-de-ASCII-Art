@@ -3,26 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Imagem para ASCII Art</title>
+    <title>ASCII Studio: crie posters a partir de imagens</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23000'/%3E%3Ctext x='8' y='42' font-family='monospace' font-size='30' font-weight='bold' fill='%2300ff00'%3E%23@%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;700&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Share+Tech+Mono&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=VT323&display=swap">
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="favicon.svg">
-    <style>
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
-</style>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect width="64" height="64" rx="12" fill="#000000"/>
-  <text x="10" y="42" font-family="'Courier New', monospace" font-size="32" font-weight="bold" fill="#00ff00">#@</text>
-</svg>
 </head>
 <body>
-    <div class="container">
-        <h1>Gerador de ASCII Art</h1>
-        <p>Escolha uma imagem para transformar em texto:</p>
-        <label id="dropzone"> <input type="file" id="inputImagem">
-        <h3>Solte uma imagem ou clique para procurar</h3></label>
-        <pre id="telaAscii">A sua arte aparecerá aqui...</pre>
-        <button id="btnBaixar" style="display: none; margin-top: 15px; padding: 10px 20px; background-color: #ffffff; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Baixar como TXT</button>
+
+    <header class="topbar">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true">#@</span>
+            <span class="brand-name">ASCII Studio</span>
+        </div>
+
+        <div class="top-actions">
+            <label class="btn" for="inputImagem">Abrir imagem</label>
+            <input type="file" id="inputImagem" accept="image/*" hidden>
+
+            <span class="sep"></span>
+
+            <button class="icon-btn" id="btnUndo" data-act="desfazer" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+            </button>
+            <button class="icon-btn" id="btnRedo" data-act="refazer" title="Refazer (Ctrl+Shift+Z)" aria-label="Refazer">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg>
+            </button>
+
+            <span class="sep"></span>
+
+            <div class="zoom-group">
+                <button class="icon-btn" data-act="zoomMenos" title="Diminuir zoom" aria-label="Diminuir zoom">−</button>
+                <button class="zoom-label" id="zoomLabel" data-act="zoomAjustar" title="Ajustar à tela">100%</button>
+                <button class="icon-btn" data-act="zoomMais" title="Aumentar zoom" aria-label="Aumentar zoom">+</button>
+            </div>
+
+            <button class="btn btn-primary" data-act="baixar">Baixar</button>
+        </div>
+    </header>
+
+    <div class="workspace">
+
+        <!-- ================= PAINEL ESQUERDO: imagem e arte ================= -->
+        <aside class="panel" id="painelEsq" aria-label="Imagem e arte ASCII">
+
+            <details class="sec" open>
+                <summary>Imagem</summary>
+                <div class="sec-body">
+                    <label class="dropzone" id="dropzone" for="inputImagem">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                            <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="dz-title">Solte uma imagem aqui ou clique para procurar</span>
+                        <span class="dz-hint">PNG, JPG ou WEBP. Você também pode colar com Ctrl+V.</span>
+                    </label>
+
+                    <div class="src-card">
+                        <canvas id="miniatura" width="240" height="300" aria-label="Trecho da imagem usado na arte"></canvas>
+                        <div class="src-info">
+                            <div class="src-name" id="srcNome">—</div>
+                            <div class="src-meta" id="srcMeta"></div>
+                            <div class="row">
+                                <label class="btn btn-small" for="inputImagem">Trocar</label>
+                                <button class="btn btn-small" data-act="exemplo">Exemplo</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="ctlImagem"></div>
+
+                    <div class="row row-wrap">
+                        <button class="btn btn-small" data-act="girar">Girar 90°</button>
+                        <button class="btn btn-small" data-act="espelharH">Espelhar ↔</button>
+                        <button class="btn btn-small" data-act="espelharV">Espelhar ↕</button>
+                        <button class="btn btn-small" data-act="resetarRecorte">Redefinir</button>
+                    </div>
+                </div>
+            </details>
+
+            <details class="sec" open>
+                <summary>Arte ASCII</summary>
+                <div class="sec-body">
+                    <div id="ctlAscii"></div>
+                    <p class="stat" id="stat"></p>
+                </div>
+            </details>
+
+            <details class="sec" open>
+                <summary>Cores da arte</summary>
+                <div class="sec-body">
+                    <div id="ctlCor"></div>
+                </div>
+            </details>
+        </aside>
+
+        <!-- ================= PALCO: live view ================= -->
+        <section class="stage-wrap" aria-label="Pré-visualização ao vivo">
+            <div class="stage" id="stage">
+                <div class="stage-inner">
+                    <canvas id="poster" aria-label="Poster"></canvas>
+                </div>
+                <div class="drop-overlay" id="dropOverlay">Solte a imagem para usar no poster</div>
+            </div>
+            <div class="statusbar">
+                <span id="statPoster"></span>
+                <span class="hint">Arraste para mover. A alça de baixo redimensiona, a de cima gira. Alt desliga o encaixe no centro.</span>
+            </div>
+        </section>
+
+        <!-- ================= PAINEL DIREITO: camadas, poster, exportar ================= -->
+        <aside class="panel" id="painelDir" aria-label="Camadas, poster e exportação">
+            <div class="tabs" role="tablist">
+                <button class="tab is-active" role="tab" data-tab="camadas">Camadas</button>
+                <button class="tab" role="tab" data-tab="poster">Poster</button>
+                <button class="tab" role="tab" data-tab="exportar">Exportar</button>
+            </div>
+
+            <!-- Camadas -->
+            <div class="tab-pane" id="tab-camadas">
+                <div class="sec-body">
+                    <ul class="layer-list" id="listaCamadas"></ul>
+                    <div class="row row-wrap layer-tools">
+                        <button class="btn btn-small" data-act="addTexto">+ Texto</button>
+                        <button class="btn btn-small" data-act="addForma">+ Forma</button>
+                        <button class="btn btn-small" data-act="duplicar" title="Duplicar (Ctrl+D)">Duplicar</button>
+                        <button class="btn btn-small" data-act="subir" title="Trazer para frente">Subir</button>
+                        <button class="btn btn-small" data-act="descer" title="Enviar para trás">Descer</button>
+                        <button class="btn btn-small btn-danger" data-act="excluir" title="Excluir (Delete)">Excluir</button>
+                    </div>
+                </div>
+                <div class="sec-body props" id="propsCamada"></div>
+            </div>
+
+            <!-- Poster -->
+            <div class="tab-pane" id="tab-poster" hidden>
+                <div class="sec-body">
+                    <h4>Tamanho</h4>
+                    <label class="fld">
+                        <span class="fld-l">Formato</span>
+                        <select id="posterPreset"></select>
+                    </label>
+                    <div class="size-row">
+                        <label class="fld fld-num"><span class="fld-l">Largura (px)</span><input type="number" id="posterW" min="200" max="6000" step="1"></label>
+                        <button class="icon-btn" id="posterTrocar" title="Trocar orientação" aria-label="Trocar orientação">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L3 8l4 4"/><path d="M3 8h14"/><path d="M17 20l4-4-4-4"/><path d="M21 16H7"/></svg>
+                        </button>
+                        <label class="fld fld-num"><span class="fld-l">Altura (px)</span><input type="number" id="posterH" min="200" max="6000" step="1"></label>
+                    </div>
+
+                    <h4>Paletas</h4>
+                    <div class="paletas" id="paletas"></div>
+
+                    <div id="ctlPoster"></div>
+                </div>
+            </div>
+
+            <!-- Exportar -->
+            <div class="tab-pane" id="tab-exportar" hidden>
+                <div class="sec-body">
+                    <label class="fld">
+                        <span class="fld-l">Formato</span>
+                        <select id="fmt">
+                            <option value="png">PNG (poster)</option>
+                            <option value="jpg">JPG (poster)</option>
+                            <option value="txt">TXT (só o texto ASCII)</option>
+                        </select>
+                    </label>
+                    <label class="fld" data-only-img>
+                        <span class="fld-l">Resolução</span>
+                        <select id="escalaExp">
+                            <option value="1">1x</option>
+                            <option value="2" selected>2x</option>
+                            <option value="3">3x</option>
+                            <option value="4">4x</option>
+                        </select>
+                    </label>
+                    <label class="fld-check" data-only-png>
+                        <input type="checkbox" id="transp">
+                        <span>Fundo transparente (só PNG)</span>
+                    </label>
+                    <p class="stat" id="infoExp"></p>
+                    <button class="btn btn-primary btn-block" data-act="baixar">Baixar</button>
+
+                    <h4>Mais</h4>
+                    <div class="row row-wrap">
+                        <button class="btn btn-small" data-act="copiarTexto">Copiar texto ASCII</button>
+                        <button class="btn btn-small" data-act="salvarProjeto" title="Ctrl+S">Salvar projeto</button>
+                        <button class="btn btn-small" data-act="abrirProjeto">Abrir projeto</button>
+                        <input type="file" id="inputProjeto" accept=".json,application/json" hidden>
+                    </div>
+                    <p class="stat">O projeto salvo guarda a imagem e todas as camadas, para você continuar depois.</p>
+                </div>
+            </div>
+        </aside>
     </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="script.js"></script>
 </body>
-<script src="script.js"></script>
 </html>
